@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# ======= CONFIGURAÇÕES =======
+DATA=$(date +%Y-%m-%d_%H-%M)
+DIR_BKP="/opt/backups/zabbix"
+ARQUIVO_SQL="$DIR_BKP/zabbix_db_$DATA.sql"
+ARQUIVO_FINAL="$DIR_BKP/zabbix_bkp_$DATA.tar.gz"
+LOG="/var/log/bkp_zabbix.log"
+
+# Dados do banco
+DB_USER=""
+DB_PASS=""
+DB_NAME=""
+
+# Remote do rclone
+REMOTE="gdrive"
+DESTINO_REMOTE="zabbix-bkp"
+
+# ======= INÍCIO =======
+echo "[$(date)] Iniciando backup do Zabbix" >> $LOG
+
+# Garante que diretório existe
+mkdir -p $DIR_BKP
+
+# Dump do banco de dados
+mysqldump -u $zabbix -p$ $zabbix > $bkpzabbix
+
+# Compacta os arquivos
+tar -czf $ARQUIVO_FINAL \
+    $ARQUIVO_SQL \
+    /etc/zabbix/ \
+    /usr/share/zabbix/ 2>> $LOG
+
+# Remove SQL após compactação
+rm -f $ARQUIVO_SQL
+
+# Envia para o Google Drive
+rclone copy $ARQUIVO_FINAL $REMOTE:$DESTINO_REMOTE >> $LOG 2>&1
+
+# Remove backup local (opcional)
+rm -f $ARQUIVO_FINAL
+
+echo "[$(date)] Backup do Zabbix concluído" >> $LOG
